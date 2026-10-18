@@ -24,14 +24,20 @@ import {
 
 dotenv.config();
 
+function cleanEnv(val: string | undefined, fallback: string): string {
+  if (!val) return fallback;
+  return val.trim().replace(/^["']|["']$/g, '') || fallback;
+}
+
 function getAdminCredentials() {
   dotenv.config();
   return {
-    username: process.env.ADMIN_USERNAME || 'admin',
-    password: process.env.ADMIN_PASSWORD || 'TierRettung!Admin2026',
-    secret:
-      process.env.ADMIN_TOKEN_SECRET ||
+    username: cleanEnv(process.env.ADMIN_USERNAME, 'admin'),
+    password: cleanEnv(process.env.ADMIN_PASSWORD, 'TierRettung!Admin2026'),
+    secret: cleanEnv(
+      process.env.ADMIN_TOKEN_SECRET,
       '9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e',
+    ),
   };
 }
 
@@ -71,6 +77,21 @@ function verifyAdminToken(authHeader?: string): boolean {
 }
 
 async function readJsonBody<T>(req: IncomingMessage): Promise<T> {
+  // Vercel Serverless Functions (@vercel/node) pre-parse req.body before invoking the handler
+  const preParsedBody = (req as IncomingMessage & { body?: unknown }).body;
+  if (preParsedBody !== undefined && preParsedBody !== null) {
+    if (typeof preParsedBody === 'string') {
+      return (preParsedBody ? JSON.parse(preParsedBody) : {}) as T;
+    }
+    if (Buffer.isBuffer(preParsedBody)) {
+      const str = preParsedBody.toString('utf-8');
+      return (str ? JSON.parse(str) : {}) as T;
+    }
+    if (typeof preParsedBody === 'object') {
+      return preParsedBody as T;
+    }
+  }
+
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     let totalBytes = 0;
@@ -109,12 +130,16 @@ export async function handleApiRequest(
   res: ServerResponse,
 ): Promise<boolean> {
   const rawUrl = req.url || '';
-  if (!rawUrl.startsWith('/api/')) {
+  if (!rawUrl.startsWith('/api')) {
     return false;
   }
 
   const parsedUrl = new URL(rawUrl, 'http://localhost');
-  const pathname = parsedUrl.pathname;
+  const rewrittenPath = parsedUrl.searchParams.get('__path');
+  const pathname =
+    rewrittenPath && (parsedUrl.pathname === '/api' || parsedUrl.pathname === '/api/index')
+      ? `/api/${rewrittenPath.replace(/^\/+/, '')}`
+      : parsedUrl.pathname;
   const method = req.method || 'GET';
 
   try {
@@ -167,8 +192,10 @@ export async function handleApiRequest(
     if (pathname === '/api/admin/login' && method === 'POST') {
       const body = await readJsonBody<{ username?: string; password?: string }>(req);
       const creds = getAdminCredentials();
+      const inputUser = (body.username || '').trim();
+      const inputPass = (body.password || '').trim();
 
-      if (body.username === creds.username && body.password === creds.password) {
+      if (inputUser === creds.username && inputPass === creds.password) {
         const token = createAdminToken(creds.username);
         sendJson(res, 200, {
           token,
@@ -176,7 +203,7 @@ export async function handleApiRequest(
         });
       } else {
         sendJson(res, 401, {
-          error: 'Ungültiger Benutzername oder Passwort (siehe .env Datei).',
+          error: 'Ungültiger Benutzername oder Passwort.',
         });
       }
       return true;

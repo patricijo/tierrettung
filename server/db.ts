@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import dotenv from 'dotenv';
 import { MongoClient, type Db } from 'mongodb';
@@ -24,18 +25,30 @@ interface LocalMongoStore {
   hotlines: EmergencyHotline[];
 }
 
-const DATA_DIR = path.resolve(process.cwd(), 'server', 'data');
-const FALLBACK_FILE = path.join(DATA_DIR, 'mongodb-store.json');
+const IS_VERCEL = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+const DATA_DIR = IS_VERCEL
+  ? os.tmpdir()
+  : path.resolve(process.cwd(), 'server', 'data');
+const FALLBACK_FILE = path.join(DATA_DIR, 'tierrettung-mongodb-store.json');
 
 let mongoClient: MongoClient | null = null;
 let mongoDb: Db | null = null;
 let connectionAttempted = false;
 let lastConnectionError: string | undefined;
+let memoryFallbackStore: LocalMongoStore | null = null;
+
+function cleanEnvValue(val: string | undefined, fallback: string): string {
+  if (!val) return fallback;
+  return val.trim().replace(/^["']|["']$/g, '') || fallback;
+}
 
 function getMongoConfig() {
   dotenv.config();
-  const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/tierrettung_kompass';
-  const dbName = process.env.MONGODB_DB_NAME || 'tierrettung_kompass';
+  const uri = cleanEnvValue(
+    process.env.MONGODB_URI,
+    'mongodb://127.0.0.1:27017/tierrettung_kompass',
+  );
+  const dbName = cleanEnvValue(process.env.MONGODB_DB_NAME, 'tierrettung_kompass');
   return { uri, dbName };
 }
 
@@ -47,25 +60,30 @@ function maskMongoUri(uri: string): string {
   }
 }
 
+function createInitialStore(): LocalMongoStore {
+  return {
+    organizations: structuredClone(SEED_ORGANIZATIONS),
+    animals: structuredClone(ANIMAL_PROFILES),
+    hotlines: structuredClone(DACH_EMERGENCY_HOTLINES),
+  };
+}
+
 function readLocalFallbackStore(): LocalMongoStore {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-
-  if (!fs.existsSync(FALLBACK_FILE)) {
-    const initial: LocalMongoStore = {
-      organizations: structuredClone(SEED_ORGANIZATIONS),
-      animals: structuredClone(ANIMAL_PROFILES),
-      hotlines: structuredClone(DACH_EMERGENCY_HOTLINES),
-    };
-    fs.writeFileSync(FALLBACK_FILE, JSON.stringify(initial, null, 2), 'utf-8');
-    return initial;
-  }
-
   try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+
+    if (!fs.existsSync(FALLBACK_FILE)) {
+      const initial = memoryFallbackStore || createInitialStore();
+      memoryFallbackStore = initial;
+      fs.writeFileSync(FALLBACK_FILE, JSON.stringify(initial, null, 2), 'utf-8');
+      return initial;
+    }
+
     const raw = fs.readFileSync(FALLBACK_FILE, 'utf-8');
     const parsed = JSON.parse(raw) as Partial<LocalMongoStore>;
-    return {
+    const store: LocalMongoStore = {
       organizations:
         Array.isArray(parsed.organizations) && parsed.organizations.length > 0
           ? parsed.organizations
@@ -79,20 +97,26 @@ function readLocalFallbackStore(): LocalMongoStore {
           ? parsed.hotlines
           : structuredClone(DACH_EMERGENCY_HOTLINES),
     };
+    memoryFallbackStore = store;
+    return store;
   } catch {
-    return {
-      organizations: structuredClone(SEED_ORGANIZATIONS),
-      animals: structuredClone(ANIMAL_PROFILES),
-      hotlines: structuredClone(DACH_EMERGENCY_HOTLINES),
-    };
+    if (!memoryFallbackStore) {
+      memoryFallbackStore = createInitialStore();
+    }
+    return memoryFallbackStore;
   }
 }
 
 function writeLocalFallbackStore(store: LocalMongoStore): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+  memoryFallbackStore = store;
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(FALLBACK_FILE, JSON.stringify(store, null, 2), 'utf-8');
+  } catch {
+    // On read-only serverless environments, memoryFallbackStore keeps state in memory
   }
-  fs.writeFileSync(FALLBACK_FILE, JSON.stringify(store, null, 2), 'utf-8');
 }
 
 export async function getMongoDatabase(forceReconnect = false): Promise<Db | null> {
@@ -107,14 +131,22 @@ export async function getMongoDatabase(forceReconnect = false): Promise<Db | nul
   connectionAttempted = true;
   const { uri, dbName } = getMongoConfig();
 
+  // On Vercel, 127.0.0.1 / localhost is never a MongoDB server; skip timeout unless a remote URI is configured
+  if (IS_VERCEL && (uri.includes('127.0.0.1') || uri.includes('localhost'))) {
+    lastConnectionError =
+      'Auf Vercel gehostet: Für dauerhafte Cloud-Datenbank bitte MONGODB_URI (MongoDB Atlas) in den Vercel Environment Variables hinterlegen.';
+    readLocalFallbackStore();
+    return null;
+  }
+
   try {
     if (mongoClient) {
       await mongoClient.close().catch(() => undefined);
     }
 
     const client = new MongoClient(uri, {
-      serverSelectionTimeoutMS: 1800,
-      connectTimeoutMS: 1800,
+      serverSelectionTimeoutMS: 2000,
+      connectTimeoutMS: 2000,
     });
 
     await client.connect();

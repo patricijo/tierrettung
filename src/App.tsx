@@ -1324,17 +1324,9 @@ export function App() {
           <button
             type="button"
             onClick={() => setIsRegisterOrgOpen(true)}
-            className="text-teal-800 hover:underline"
+            className="hover:text-teal-700 hover:underline"
           >
             Organisation eintragen
-          </button>
-          <span>•</span>
-          <button
-            type="button"
-            onClick={() => setIsAdminOpen(true)}
-            className="text-slate-600 hover:text-slate-900 hover:underline"
-          >
-            Admin-Bereich
           </button>
           {osmConsent && (
             <>
@@ -1348,6 +1340,15 @@ export function App() {
               </button>
             </>
           )}
+          <span className="text-slate-300">•</span>
+          <button
+            type="button"
+            onClick={() => setIsAdminOpen(true)}
+            className="text-[11px] font-normal text-slate-400/75 transition hover:text-slate-600"
+            title="Verwaltung"
+          >
+            Admin
+          </button>
         </div>
       </footer>
 

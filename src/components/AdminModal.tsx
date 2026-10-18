@@ -52,7 +52,7 @@ type AdminTab = 'organizations' | 'animals' | 'hotlines';
 
 export function AdminModal({ isOpen, onClose, onDataChanged }: AdminModalProps) {
   const [token, setToken] = useState<string | null>(() => getSavedAdminToken());
-  const [usernameInput, setUsernameInput] = useState('admin');
+  const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -345,7 +345,7 @@ export function AdminModal({ isOpen, onClose, onDataChanged }: AdminModalProps) 
                 <div>
                   <h3 className="text-base font-black text-slate-900">Admin-Login</h3>
                   <p className="text-xs text-slate-500">
-                    Geschützt über <code className="font-mono">.env</code> Zugangsdaten
+                    Zugang nur für autorisierte Administratoren
                   </p>
                 </div>
               </div>
@@ -359,7 +359,7 @@ export function AdminModal({ isOpen, onClose, onDataChanged }: AdminModalProps) 
               <form onSubmit={handleLogin} className="mt-5 space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700">
-                    Benutzername (<code className="font-mono">ADMIN_USERNAME</code>)
+                    Benutzername
                   </label>
                   <input
                     type="text"
@@ -371,35 +371,16 @@ export function AdminModal({ isOpen, onClose, onDataChanged }: AdminModalProps) 
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700">
-                    Passwort (<code className="font-mono">ADMIN_PASSWORD</code>)
+                    Passwort
                   </label>
                   <input
                     type="password"
                     required
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
-                    placeholder="Passwort aus .env eingeben"
+                    placeholder="Passwort eingeben"
                     className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-teal-600 focus:outline-hidden"
                   />
-                </div>
-
-                <div className="rounded-xl border border-teal-200 bg-teal-50/80 p-3 text-[11px] text-teal-950">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold">Aktueller Standard in .env:</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUsernameInput('admin');
-                        setPasswordInput('TierRettung!Admin2026');
-                      }}
-                      className="rounded-lg bg-teal-700 px-2 py-1 text-[10px] font-bold text-white hover:bg-teal-800"
-                    >
-                      Ausfüllen
-                    </button>
-                  </div>
-                  <p className="mt-1 font-mono text-[11px]">
-                    User: <strong>admin</strong> | Pass: <strong>TierRettung!Admin2026</strong>
-                  </p>
                 </div>
 
                 <button
@@ -493,7 +474,7 @@ export function AdminModal({ isOpen, onClose, onDataChanged }: AdminModalProps) 
               {dbStatus && (
                 <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-[11px] text-slate-600">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold text-slate-800">MONGODB_URI (.env):</span>
+                    <span className="font-bold text-slate-800">MongoDB-Verbindung:</span>
                     <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-slate-700">
                       {dbStatus.uriMasked}
                     </code>

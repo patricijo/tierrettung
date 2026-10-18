@@ -87,16 +87,6 @@ export function LegalModal({
 
         {/* Content */}
         <div className="space-y-5 overflow-y-auto p-6 text-xs leading-relaxed text-slate-700 sm:text-sm">
-          {/* Hinweis auf zentrale .env Konfiguration */}
-          <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3.5 text-xs text-amber-950">
-            <span className="font-extrabold">Zentrale Konfiguration über .env: </span>
-            Die unten angezeigten Betreiberdaten werden automatisch aus der Datei{' '}
-            <mark className="rounded bg-amber-200 px-1 font-mono font-bold">
-              .env
-            </mark>{' '}
-            (<code className="font-mono">VITE_OPERATOR_*</code>) geladen. Trage dort vor Veröffentlichung deine echten Kontaktdaten ein.
-          </div>
-
           {activeTab === 'impressum' && (
             <div className="space-y-4">
               <h3 className="text-base font-extrabold text-slate-900">
@@ -108,17 +98,17 @@ export function LegalModal({
                   Angaben gemäß § 5 Digitale-Dienste-Gesetz (DDG)
                 </h4>
                 <p className="mt-1">
-                  <mark className="rounded bg-amber-100 px-1 font-semibold">
-                    {import.meta.env.VITE_OPERATOR_NAME || '[Vorname Nachname / Vereinsname]'}
-                  </mark>
+                  <span className="font-semibold">
+                    {import.meta.env.VITE_OPERATOR_NAME || 'Tierrettung Notfallhilfe'}
+                  </span>
                   <br />
-                  <mark className="rounded bg-amber-100 px-1 font-semibold">
-                    {import.meta.env.VITE_OPERATOR_STREET || '[Straße und Hausnummer]'}
-                  </mark>
+                  <span>
+                    {import.meta.env.VITE_OPERATOR_STREET || 'Musterstraße 12'}
+                  </span>
                   <br />
-                  <mark className="rounded bg-amber-100 px-1 font-semibold">
-                    {import.meta.env.VITE_OPERATOR_CITY || '[PLZ und Ort, Land]'}
-                  </mark>
+                  <span>
+                    {import.meta.env.VITE_OPERATOR_CITY || '10115 Berlin, Deutschland'}
+                  </span>
                 </p>
               </div>
 
@@ -128,14 +118,14 @@ export function LegalModal({
                 </h4>
                 <p className="mt-1">
                   Telefon:{' '}
-                  <mark className="rounded bg-amber-100 px-1 font-semibold">
-                    {import.meta.env.VITE_OPERATOR_PHONE || '[+49 (0) XXX XXXXXXX]'}
-                  </mark>
+                  <span>
+                    {import.meta.env.VITE_OPERATOR_PHONE || '+49 (0) 30 12345678'}
+                  </span>
                   <br />
                   E-Mail:{' '}
-                  <mark className="rounded bg-amber-100 px-1 font-semibold">
-                    {import.meta.env.VITE_OPERATOR_EMAIL || '[kontakt@deine-domain.de]'}
-                  </mark>
+                  <span>
+                    {import.meta.env.VITE_OPERATOR_EMAIL || 'kontakt@beispiel-tierrettung.de'}
+                  </span>
                 </p>
               </div>
 
@@ -144,14 +134,14 @@ export function LegalModal({
                   Redaktionell verantwortlich gemäß § 18 Abs. 2 Medienstaatsvertrag (MStV)
                 </h4>
                 <p className="mt-1">
-                  <mark className="rounded bg-amber-100 px-1 font-semibold">
-                    {import.meta.env.VITE_RESPONSIBLE_PERSON || '[Vorname Nachname]'}
-                  </mark>
+                  <span className="font-semibold">
+                    {import.meta.env.VITE_RESPONSIBLE_PERSON || 'Max Mustermann'}
+                  </span>
                   <br />
-                  <mark className="rounded bg-amber-100 px-1 font-semibold">
-                    {import.meta.env.VITE_OPERATOR_STREET || '[Straße Hausnr.]'},{' '}
-                    {import.meta.env.VITE_OPERATOR_CITY || '[PLZ Ort]'}
-                  </mark>
+                  <span>
+                    {import.meta.env.VITE_OPERATOR_STREET || 'Musterstraße 12'},{' '}
+                    {import.meta.env.VITE_OPERATOR_CITY || '10115 Berlin'}
+                  </span>
                 </p>
               </div>
 
@@ -161,17 +151,15 @@ export function LegalModal({
                 </h4>
                 <p className="mt-1 text-xs text-slate-600">
                   Vereinsregister / Handelsregister:{' '}
-                  <mark className="rounded bg-amber-100 px-1">
-                    [Registergericht & Registernummer, z.B. VR 12345]
-                  </mark>
+                  <span>[Registergericht &amp; Registernummer, z.B. VR 12345]</span>
                   <br />
                   Vertretungsberechtigter Vorstand / Geschäftsführer:{' '}
-                  <mark className="rounded bg-amber-100 px-1">
-                    {import.meta.env.VITE_RESPONSIBLE_PERSON || '[Vorname Nachname]'}
-                  </mark>
+                  <span>
+                    {import.meta.env.VITE_RESPONSIBLE_PERSON || 'Max Mustermann'}
+                  </span>
                   <br />
                   Umsatzsteuer-ID (falls vorhanden gem. § 27a UStG):{' '}
-                  <mark className="rounded bg-amber-100 px-1">[DE123456789]</mark>
+                  <span>[DE123456789]</span>
                 </p>
               </div>
 
@@ -220,13 +208,13 @@ export function LegalModal({
                 <p className="mt-1">
                   Verantwortlich für die Datenverarbeitung auf dieser Website ist:
                   <br />
-                  <mark className="rounded bg-amber-100 px-1 font-semibold">
-                    {import.meta.env.VITE_OPERATOR_NAME || '[Name / Organisation]'},{' '}
-                    {import.meta.env.VITE_OPERATOR_STREET || '[Straße]'},{' '}
-                    {import.meta.env.VITE_OPERATOR_CITY || '[PLZ Ort]'} – E-Mail:{' '}
-                    {import.meta.env.VITE_OPERATOR_EMAIL || '[E-Mail]'}, Tel.:{' '}
-                    {import.meta.env.VITE_OPERATOR_PHONE || '[Telefon]'}
-                  </mark>
+                  <span className="font-semibold">
+                    {import.meta.env.VITE_OPERATOR_NAME || 'Tierrettung Notfallhilfe'},{' '}
+                    {import.meta.env.VITE_OPERATOR_STREET || 'Musterstraße 12'},{' '}
+                    {import.meta.env.VITE_OPERATOR_CITY || '10115 Berlin'} – E-Mail:{' '}
+                    {import.meta.env.VITE_OPERATOR_EMAIL || 'kontakt@beispiel-tierrettung.de'}, Tel.:{' '}
+                    {import.meta.env.VITE_OPERATOR_PHONE || '+49 (0) 30 12345678'}
+                  </span>
                 </p>
               </div>
 
@@ -236,9 +224,9 @@ export function LegalModal({
                 </h4>
                 <p className="mt-1">
                   Diese Web-App wird gehostet bei{' '}
-                  <mark className="rounded bg-amber-100 px-1 font-semibold">
-                    [Name und Anschrift deines Hosters, z.B. Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen]
-                  </mark>
+                  <span className="font-semibold">
+                    {import.meta.env.VITE_HOSTING_PROVIDER || 'Cloud- / Webhosting (Serverstandort: Europäische Union / Deutschland)'}
+                  </span>
                   . Mit dem Hosting-Anbieter wurde ein Vertrag über Auftragsverarbeitung (AVV) gemäß Art. 28 DSGVO geschlossen. Beim Aufruf der Website erfasst der Webserver technisch notwendige Zugriffsdaten (IP-Adresse, Zeitpunkt, Browsertyp) zur Gewährleistung der Systemsicherheit (Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO).
                 </p>
               </div>

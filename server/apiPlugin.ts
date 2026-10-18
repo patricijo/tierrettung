@@ -2,12 +2,12 @@ import crypto from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import dotenv from 'dotenv';
 import type { Plugin } from 'vite';
-import type { AnimalProfile, EmergencyHotline } from '../src/data/rescueData';
+import type { AnimalProfile, EmergencyHotline } from '../src/data/rescueData.ts';
 import type {
   OrganizationRegistrationPayload,
   OrganizationStatus,
   RescueOrganization,
-} from '../src/types/organization';
+} from '../src/types/organization.ts';
 import {
   deleteAnimalProfileAdmin,
   deleteHotlineAdmin,
@@ -20,7 +20,7 @@ import {
   upsertAnimalProfileAdmin,
   upsertHotlineAdmin,
   upsertOrganizationAdmin,
-} from './db';
+} from './db.ts';
 
 dotenv.config();
 
@@ -81,41 +81,76 @@ async function readJsonBody<T>(req: IncomingMessage): Promise<T> {
   const preParsedBody = (req as IncomingMessage & { body?: unknown }).body;
   if (preParsedBody !== undefined && preParsedBody !== null) {
     if (typeof preParsedBody === 'string') {
-      return (preParsedBody ? JSON.parse(preParsedBody) : {}) as T;
+      try {
+        return (preParsedBody.trim() ? JSON.parse(preParsedBody) : {}) as T;
+      } catch {
+        return {} as T;
+      }
     }
     if (Buffer.isBuffer(preParsedBody)) {
-      const str = preParsedBody.toString('utf-8');
-      return (str ? JSON.parse(str) : {}) as T;
+      try {
+        const str = preParsedBody.toString('utf-8');
+        return (str.trim() ? JSON.parse(str) : {}) as T;
+      } catch {
+        return {} as T;
+      }
     }
     if (typeof preParsedBody === 'object') {
       return preParsedBody as T;
     }
   }
 
-  return new Promise((resolve, reject) => {
+  // If stream already completed/ended, avoid hanging on data/end
+  if ((req as IncomingMessage & { readableEnded?: boolean }).readableEnded) {
+    return {} as T;
+  }
+
+  return new Promise((resolve) => {
     const chunks: Buffer[] = [];
     let totalBytes = 0;
+    let settled = false;
+
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        resolve({} as T);
+      }
+    }, 4000);
 
     req.on('data', (chunk: Buffer) => {
       totalBytes += chunk.length;
       if (totalBytes > 2 * 1024 * 1024) {
-        reject(new Error('Payload too large'));
-        req.destroy();
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          req.destroy();
+          resolve({} as T);
+        }
         return;
       }
       chunks.push(chunk);
     });
 
     req.on('end', () => {
-      try {
-        const raw = Buffer.concat(chunks).toString('utf-8');
-        resolve((raw ? JSON.parse(raw) : {}) as T);
-      } catch (err) {
-        reject(err);
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        try {
+          const raw = Buffer.concat(chunks).toString('utf-8').trim();
+          resolve((raw ? JSON.parse(raw) : {}) as T);
+        } catch {
+          resolve({} as T);
+        }
       }
     });
 
-    req.on('error', reject);
+    req.on('error', () => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        resolve({} as T);
+      }
+    });
   });
 }
 

@@ -1,4 +1,4 @@
-import type { RescueOrganization } from '../types/organization';
+import type { RescueOrganization } from '../types/organization.ts';
 
 export const SEED_ORGANIZATIONS: RescueOrganization[] = [
   {

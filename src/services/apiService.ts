@@ -145,9 +145,10 @@ async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {
   if (
     response.status === 404 ||
     response.status === 405 ||
+    response.status >= 500 ||
     contentType.includes('text/html')
   ) {
-    throw new EndpointUnavailableError(`API nicht aktiv (HTTP ${response.status})`);
+    throw new EndpointUnavailableError(`API nicht erreichbar oder Serverfehler (HTTP ${response.status})`);
   }
 
   const data = (await response.json().catch(() => ({}))) as T & { error?: string };

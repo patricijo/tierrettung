@@ -8,14 +8,14 @@ import {
   DACH_EMERGENCY_HOTLINES,
   type AnimalProfile,
   type EmergencyHotline,
-} from '../src/data/rescueData';
-import { SEED_ORGANIZATIONS } from '../src/data/seedOrganizations';
+} from '../src/data/rescueData.ts';
+import { SEED_ORGANIZATIONS } from '../src/data/seedOrganizations.ts';
 import type {
   DatabaseStatusInfo,
   OrganizationRegistrationPayload,
   OrganizationStatus,
   RescueOrganization,
-} from '../src/types/organization';
+} from '../src/types/organization.ts';
 
 dotenv.config();
 
